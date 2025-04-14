@@ -1,4 +1,4 @@
-package mx.edu.utez.Backend.Bodegas.controlller;
+package mx.edu.utez.Backend.Bodegas.controller;
 
 import mx.edu.utez.Backend.Bodegas.models.usuario.UsuarioBean;
 import mx.edu.utez.Backend.Bodegas.services.UsuariosService;
@@ -29,9 +29,12 @@ public class UsuariosController {
     }
 
     @GetMapping("rol/{rol}")
-    public ResponseEntity<UsuarioBean> buscarPorRol(@PathVariable String rol) {
-        Optional<UsuarioBean> usuario = usuarioService.BuscarRol(rol);
-        return usuario.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<List<UsuarioBean>> buscarPorRol(@PathVariable String rol) {
+        List<UsuarioBean> usuarios = usuarioService.buscarPorRol(rol);
+        if (usuarios.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(usuarios);
     }
 
     @GetMapping("uuid/{uuid}")
@@ -47,10 +50,12 @@ public class UsuariosController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Optional<UsuarioBean>> actualizarUsuario(@PathVariable Long id, @RequestBody UsuarioBean nuevoUsuario) {
-        Optional<UsuarioBean> usuarioActualizado = usuarioService.actualizarUsuario(id, nuevoUsuario);
-        return ResponseEntity.ok(usuarioActualizado);
+    public ResponseEntity<UsuarioBean> actualizarUsuario(@PathVariable Long id, @RequestBody UsuarioBean nuevoUsuario) {
+        return usuarioService.actualizarUsuario(id, nuevoUsuario)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarUsuario(@PathVariable Long id) {

@@ -16,8 +16,6 @@ public class BodegaBean {
     @Column(unique = true, length = 36)
     String uuid;
     @Column(nullable = false)
-    String tipo;
-    @Column(nullable = false)
     String folio;
     @Column(nullable = false)
     Double precio;
@@ -26,7 +24,7 @@ public class BodegaBean {
     @Column(nullable = false)
     String tamano;
     @Column (nullable = false)
-    String edificio;
+    String descripcion;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sede_id") // FK hacia SedeBean
@@ -48,13 +46,6 @@ public class BodegaBean {
         this.uuid = uuid;
     }
 
-    public String getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
-    }
 
     public String getFolio() {
         return folio;
@@ -88,12 +79,12 @@ public class BodegaBean {
         this.tamano = tamano;
     }
 
-    public String getEdificio() {
-        return edificio;
+    public String getDescripcion() {
+        return descripcion;
     }
 
-    public void setEdificio(String edificio) {
-        this.edificio = edificio;
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
     }
 
     public SedeBean getSede() {
