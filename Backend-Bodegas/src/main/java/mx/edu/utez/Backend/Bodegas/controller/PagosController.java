@@ -1,4 +1,4 @@
-package mx.edu.utez.Backend.Bodegas.controlller;
+package mx.edu.utez.Backend.Bodegas.controller;
 
 import mx.edu.utez.Backend.Bodegas.models.pago.PagoBean;
 import mx.edu.utez.Backend.Bodegas.services.PagosService;

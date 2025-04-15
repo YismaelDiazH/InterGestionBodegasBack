@@ -1,4 +1,4 @@
-package mx.edu.utez.Backend.Bodegas.controlller;
+package mx.edu.utez.Backend.Bodegas.controller;
 
 import mx.edu.utez.Backend.Bodegas.models.bodega.BodegaBean;
 import mx.edu.utez.Backend.Bodegas.services.BodegasService;
@@ -21,19 +21,19 @@ public class BodegasController {
         return bodegas_services.ObtenerTodas();
     }
 
-    @GetMapping("ID/{id}")
+    @GetMapping("id/{id}")
     public ResponseEntity<BodegaBean> BuscarId(@PathVariable Long id){
         Optional<BodegaBean> bodega = bodegas_services.BuscarID(id);
         return ResponseEntity.ok(bodega.get());
     }
 
-    @GetMapping("UUID/{id}")
+    @GetMapping("uuid/{id}")
     public ResponseEntity<BodegaBean> BuscarUiid(@PathVariable String uuid){
         Optional<BodegaBean> bodega = bodegas_services.BuscarPorUUID(uuid);
         return ResponseEntity.ok(bodega.get());
     }
 
-    @PostMapping("crear/")
+    @PostMapping
     public ResponseEntity<BodegaBean> crearBodega(@RequestBody BodegaBean bodega) {
         BodegaBean NuevaBodega = bodegas_services.CrearBodega(bodega);
         return ResponseEntity.status(201).body(NuevaBodega);
@@ -47,7 +47,7 @@ public class BodegasController {
     }
 
 
-    @DeleteMapping("Eliminar/{id}")
+    @DeleteMapping("eliminar/{id}")
     public ResponseEntity<Void> eliminarBodega(@PathVariable Long id) {
         Optional<BodegaBean> empresa = bodegas_services.BuscarID(id);
         if (empresa.isPresent()) {

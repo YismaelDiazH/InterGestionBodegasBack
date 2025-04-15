@@ -1,13 +1,16 @@
 package mx.edu.utez.Backend.Bodegas.services;
 
 import mx.edu.utez.Backend.Bodegas.models.sede.SedeBean;
+import mx.edu.utez.Backend.Bodegas.models.usuario.UsuarioBean;
 import mx.edu.utez.Backend.Bodegas.repositories.SedeRepository;
+import mx.edu.utez.Backend.Bodegas.repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class SedesService {
@@ -28,11 +31,28 @@ public class SedesService {
         return sedeRepository.findById(id);
     }
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     public SedeBean crearSede(SedeBean sede) {
         validarSede(sede);
+
         sede.setUuid(UUID.randomUUID().toString());
+
+        // Validación y asignación de administradores si viene la lista
+        if (sede.getAdministradores() != null && !sede.getAdministradores().isEmpty()) {
+            List<Long> ids = sede.getAdministradores()
+                    .stream()
+                    .map(admin -> (long) admin.getId()) // Conversión explícita de int a long
+                    .collect(Collectors.toList());
+
+            List<UsuarioBean> administradores = usuarioRepository.findAllById(ids);
+            sede.setAdministradores(administradores);
+        }
+
         return sedeRepository.save(sede);
     }
+
 
     public Optional<SedeBean> actualizarSede(Long id, SedeBean nuevaSede) {
         return sedeRepository.findById(id)
@@ -58,8 +78,8 @@ public class SedesService {
         if (sede.getDireccion() == null || sede.getDireccion().isEmpty() || !sede.getDireccion().matches(DIRECCION_REGEX)) {
             throw new IllegalArgumentException("La dirección de la sede es inválida.");
         }
-        if (sede.getAdministrador() == null || sede.getAdministrador().isEmpty() || !sede.getAdministrador().matches(ADMINISTRADOR_REGEX)) {
-            throw new IllegalArgumentException("El administrador de la sede es inválido.");
+        if (sede.getAdministradores() == null || sede.getAdministradores().isEmpty()) {
+            throw new IllegalArgumentException("Debe asignarse al menos un administrador.");
         }
     }
 }

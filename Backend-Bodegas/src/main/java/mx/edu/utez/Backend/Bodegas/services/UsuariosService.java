@@ -1,5 +1,6 @@
 package mx.edu.utez.Backend.Bodegas.services;
 
+import mx.edu.utez.Backend.Bodegas.models.usuario.Role;
 import mx.edu.utez.Backend.Bodegas.models.usuario.UsuarioBean;
 import mx.edu.utez.Backend.Bodegas.repositories.UsuarioRepository;
 import org.apache.logging.log4j.LogManager;
@@ -112,7 +113,7 @@ public class UsuariosService {
         }
     }
 
-    public Optional<UsuarioBean> BuscarRol(String rol) {
-        return usuarioRepository.findByRol(rol);
+    public List<UsuarioBean> buscarPorRol(String rol) {
+        return usuarioRepository.findAllByRol(Role.valueOf(rol.toUpperCase()));
     }
 }
