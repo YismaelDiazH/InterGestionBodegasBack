@@ -12,12 +12,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("api/sedes/")
 
 public class SedesController {
+    private static final Logger logger = LogManager.getLogger(SedesController.class);
     @Autowired
     private SedesService sedeService;
 
@@ -29,12 +32,17 @@ public class SedesController {
 
     @GetMapping
     public List<SedeBean> obtenerTodasLasSedes() {
+        logger.info("GET /api/sedes/ - Consultando todas las sedes");
         return sedeService.obtenerTodasLasSedes();
     }
 
     @GetMapping("id/{id}")
     public ResponseEntity<SedeBean> buscarPorId(@PathVariable Long id) {
+        logger.debug("GET /api/sedes/id/{} - Buscando sede por ID", id);
         Optional<SedeBean> sede = sedeService.buscarPorId(id);
+        if (sede.isEmpty()) {
+            logger.warn("Sede con ID {} no encontrada", id);
+        }
         return sede.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -46,69 +54,87 @@ public class SedesController {
 
     @PostMapping
     public ResponseEntity<?> crearSede(@RequestBody SedeDto sedeDto) {
+        logger.info("POST /api/sedes/ - Creando nueva sede: {}", sedeDto.getNombre());
         try {
-            // Crear una nueva entidad SedeBean
+            validarSedeDTO(sedeDto);
+
             SedeBean sede = new SedeBean();
             sede.setNombre(sedeDto.getNombre());
             sede.setDireccion(sedeDto.getDireccion());
 
-            // Buscar los usuarios (administradores) por sus IDs
             List<UsuarioBean> administradores = usuarioRepository.findAllById(sedeDto.getAdministradores());
-
-            // Verificar si todos los administradores existen
             if (administradores.size() != sedeDto.getAdministradores().size()) {
+                logger.error("Error al crear sede: Algunos administradores no existen - IDs solicitados: {}", sedeDto.getAdministradores());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Algunos administradores no existen en la base de datos.");
+                        .body("Algunos administradores no existen");
             }
 
-            // Asignar los administradores a la sede
             sede.setAdministradores(administradores);
+            SedeBean sedeCreada = sedeRepository.save(sede);
 
-            // Guardar la sede en la base de datos
-            sedeRepository.save(sede);
+            logger.info("Sede creada exitosamente - ID: {}, Administradores: {}",
+                    sedeCreada.getId(), sedeDto.getAdministradores());
+            return ResponseEntity.status(HttpStatus.CREATED).body(sedeCreada);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(sede);
+        } catch (IllegalArgumentException e) {
+            logger.error("Error de validación al crear sede: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al crear la sede.");
+            logger.error("Error interno al crear sede: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Error del servidor");
         }
     }
-
-    public void validarSedeDTO(SedeDto sedeDTO) {
+    private void validarSedeDTO(SedeDto sedeDTO) {
         if (sedeDTO.getNombre() == null || sedeDTO.getNombre().isEmpty()) {
-            throw new IllegalArgumentException("El nombre de la sede es obligatorio.");
+            logger.error("Validación fallida: Nombre de sede vacío");
+            throw new IllegalArgumentException("Nombre obligatorio");
         }
         if (sedeDTO.getDireccion() == null || sedeDTO.getDireccion().isEmpty()) {
-            throw new IllegalArgumentException("La dirección de la sede es obligatoria.");
+            logger.error("Validación fallida: Dirección de sede vacía");
+            throw new IllegalArgumentException("Dirección obligatoria");
         }
         if (sedeDTO.getAdministradores() == null || sedeDTO.getAdministradores().isEmpty()) {
-            throw new IllegalArgumentException("Debe asignarse al menos un administrador.");
+            logger.error("Validación fallida: Sin administradores asignados");
+            throw new IllegalArgumentException("Se requiere al menos 1 administrador");
         }
     }
+
     @PutMapping("/{id}")
-    public ResponseEntity<SedeBean> actualizarSede(@PathVariable Long id, @RequestBody SedeDto sedeDTO) {  // Añadimos @RequestBody
+    public ResponseEntity<SedeBean> actualizarSede(@PathVariable Long id, @RequestBody SedeDto sedeDTO) {
+        logger.info("PUT /api/sedes/{} - Actualizando sede", id);
         return sedeRepository.findById(id)
                 .map(sedeExistente -> {
                     sedeExistente.setNombre(sedeDTO.getNombre());
                     sedeExistente.setDireccion(sedeDTO.getDireccion());
 
-                    // Actualizar administradores
-                    if (sedeDTO.getAdministradores() != null && !sedeDTO.getAdministradores().isEmpty()) {
+                    if (sedeDTO.getAdministradores() != null) {
                         List<UsuarioBean> administradores = usuarioRepository.findAllById(sedeDTO.getAdministradores());
+                        if (administradores.size() != sedeDTO.getAdministradores().size()) {
+                            logger.warn("No se encontraron todos los administradores durante actualización - IDs: {}",
+                                    sedeDTO.getAdministradores());
+                        }
                         sedeExistente.setAdministradores(administradores);
                     }
-                    SedeBean sedeActualizada = sedeRepository.save(sedeExistente);
-                    return ResponseEntity.ok(sedeActualizada);  // Retornamos un 200 OK
+
+                    SedeBean actualizada = sedeRepository.save(sedeExistente);
+                    logger.info("Sede {} actualizada correctamente", id);
+                    return ResponseEntity.ok(actualizada);
                 })
-                .orElseGet(() -> ResponseEntity.notFound().build());  // Si no se encuentra la sede, retornamos 404
+                .orElseGet(() -> {
+                    logger.warn("Intento de actualizar sede inexistente - ID: {}", id);
+                    return ResponseEntity.notFound().build();
+                });
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarSede(@PathVariable Long id) {
-        Optional<SedeBean> sede = sedeService.buscarPorId(id);
-        if (sede.isPresent()) {
+        logger.warn("DELETE /api/sedes/{} - Solicitada eliminación de sede", id);
+        if (sedeRepository.existsById(id)) {
             sedeService.eliminarSede(id);
+            logger.info("Sede {} eliminada exitosamente", id);
             return ResponseEntity.noContent().build();
         } else {
+            logger.error("No se pudo eliminar: Sede con ID {} no encontrada", id);
             return ResponseEntity.notFound().build();
         }
     }

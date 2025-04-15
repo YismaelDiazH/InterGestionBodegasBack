@@ -9,16 +9,14 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
 @Service
 public class PagosService {
     @Autowired
     private PagoRepository pagoRepository;
 
-    //REGEX patterns
-    private static final String MONTO_PATTERN = "^(?!\\s*$)\\d+(\\.\\d{1,2})?$"
-            ;
-    private static final String FECHA_PATTERN = "^(?!\\s*$)\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
-            ;
+    private static final String MONTO_PATTERN = "^(?!\\s*$)\\d+(\\.\\d{1,2})?$";
+    private static final String FECHA_PATTERN = "^(?!\\s*$)\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$";
 
     public List<PagoBean> obtenerTodosLosPagos() {
         return pagoRepository.findAll();
@@ -40,10 +38,11 @@ public class PagosService {
                 .map(pagoExistente -> {
                     pagoExistente.setMonto(nuevoPago.getMonto());
                     pagoExistente.setFechaPago(nuevoPago.getFechaPago());
-                    pagoExistente.setBodega(nuevoPago.getBodega());
+
                     return pagoRepository.save(pagoExistente);
                 });
     }
+
 
     public void eliminarPago(Long id) {
         pagoRepository.deleteById(id);
@@ -52,12 +51,20 @@ public class PagosService {
     public Optional<PagoBean> buscarPorUUID(String uuid) {
         return pagoRepository.findByUuid(uuid);
     }
+
     public void validarPago(PagoBean pago) {
-        if (!pago.getMonto().toString().matches(MONTO_PATTERN)) {
+        String montoStr = String.valueOf(pago.getMonto());
+        String fechaStr = pago.getFechaPago().toString();
+
+        if (!montoStr.matches(MONTO_PATTERN)) {
             throw new IllegalArgumentException("El monto no es válido");
         }
-        if (!pago.getFechaPago().toString().matches(FECHA_PATTERN)) {
+        if (!fechaStr.matches(FECHA_PATTERN)) {
             throw new IllegalArgumentException("La fecha no es válida");
         }
+    }
+
+    public List<PagoBean> obtenerPagosPorRenta(Long rentaId) {
+        return pagoRepository.findAllByRenta_Id(rentaId);
     }
 }
