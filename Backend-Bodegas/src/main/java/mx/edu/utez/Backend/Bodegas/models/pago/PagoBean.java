@@ -29,4 +29,6 @@ public class PagoBean {
     @JoinColumn(name = "renta_id")
     @JsonIgnoreProperties("pagos") // Evita recursividad
     private RentaBean renta;
+    private String paymentIntentId; // ID de Stripe
+    private String paymentStatus;
 }

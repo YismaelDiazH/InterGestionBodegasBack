@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Appenders>
-        <!-- Appender para CONSOLA -->
+
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </Console>
 
-        <!-- Appender para ARCHIVO (Rotativo) -->
-        <RollingFile name="File" fileName="logs/app.log"
-                     filePattern="logs/app-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="File" fileName="logs/app.log" filePattern="logs/app-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
             <Policies>
                 <SizeBasedTriggeringPolicy size="10 MB"/>
@@ -17,15 +15,13 @@
             <DefaultRolloverStrategy max="10"/>
         </RollingFile>
     </Appenders>
-
     <Loggers>
         <Root level="info">
-            <!-- Referencia a ambos appenders -->
+
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>
 
-        <!-- Logger específico para tu paquete con nivel más detallado -->
         <Logger name="mx.edu.utez" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>

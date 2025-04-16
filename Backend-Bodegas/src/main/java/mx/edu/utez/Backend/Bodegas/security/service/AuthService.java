@@ -14,9 +14,9 @@ import java.util.Date;
 public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
-
-    private final String SECRET_KEY = "MI_CLAVE_SECRETA_123"; // Usa un valor más seguro en producción
-    private final long EXPIRATION_TIME = 86400000; // 1 día en milisegundos
+    private final long EXPIRATION_TIME = 900000;
+    private final long REFRESH_EXPIRATION_TIME = 86400000;
+    private final String SECRET_KEY = "MI_CLAVE_SECRETA_123";
 
     public AuthService(AuthenticationManager authenticationManager, UsuarioRepository usuarioRepository) {
         this.authenticationManager = authenticationManager;

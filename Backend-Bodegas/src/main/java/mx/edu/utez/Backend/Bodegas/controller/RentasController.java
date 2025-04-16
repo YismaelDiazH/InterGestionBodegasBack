@@ -1,14 +1,16 @@
 package mx.edu.utez.Backend.Bodegas.controller;
 
+import com.stripe.model.PaymentIntent;
 import mx.edu.utez.Backend.Bodegas.models.renta.RentaBean;
 import mx.edu.utez.Backend.Bodegas.services.RentasService;
+import mx.edu.utez.Backend.Bodegas.services.StripeService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -16,8 +18,13 @@ import java.util.Optional;
 public class RentasController {
     private static final Logger logger = LogManager.getLogger(RentasController.class);
 
-    @Autowired
+    private final StripeService stripeService;
     private RentasService rentasService;
+
+    public RentasController(RentasService rentasService, StripeService stripeService) {
+        this.rentasService = rentasService;
+        this.stripeService = stripeService;
+    }
 
     @GetMapping
     public List<RentaBean> obtenerTodasLasRentas() {
@@ -71,20 +78,27 @@ public class RentasController {
         }
     }
 
-    @PutMapping("renovar/{id}")
-    public ResponseEntity<RentaBean> renovarRenta(
-            @PathVariable Long id,
-            @RequestBody RentaBean datosRenovacion) {
-        logger.info("PUT /api/rentas/renovar/{} - Solicitando renovación de renta", id);
-        Optional<RentaBean> renovada = rentasService.renovarRenta(id, datosRenovacion);
-        if (renovada.isPresent()) {
-            logger.info("Renta {} renovada exitosamente. Nueva renta ID: {}",
-                    id, renovada.get().getId());
-        } else {
-            logger.warn("No se pudo renovar: Renta con ID {} no encontrada", id);
+    @PutMapping("/rentas/{id}/renovar")
+    public ResponseEntity<?> renovarRenta(@PathVariable Long id) {
+        try {
+            // 1. Obtener la renta actual
+            RentaBean rentaActual = rentasService.buscarPorId(id).orElseThrow();
+
+            // 2. Crear Payment Intent para la renovación
+            PaymentIntent paymentIntent = stripeService.createPaymentIntent(
+                    (long) (rentaActual.getBodega().getPrecio() * 100),
+                    "mxn",
+                    "Renovación de bodega " + rentaActual.getBodega().getFolio()
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "clientSecret", paymentIntent.getClientSecret(),
+                    "paymentIntentId", paymentIntent.getId(),
+                    "rentaId", id
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error al procesar la renovación");
         }
-        return renovada.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("{id}")

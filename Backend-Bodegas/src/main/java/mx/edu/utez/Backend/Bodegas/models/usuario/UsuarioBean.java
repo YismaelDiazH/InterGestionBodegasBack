@@ -13,7 +13,7 @@ public class UsuarioBean {
     @Column(unique = true, length = 36)
     private String uuid;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
