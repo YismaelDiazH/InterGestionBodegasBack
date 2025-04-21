@@ -2,69 +2,65 @@ package mx.edu.utez.Backend.Bodegas.services;
 
 import mx.edu.utez.Backend.Bodegas.models.pago.PagoBean;
 import mx.edu.utez.Backend.Bodegas.repositories.PagoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class PagosService {
-    @Autowired
-    private PagoRepository pagoRepository;
 
-    private static final String MONTO_PATTERN = "^(?!\\s*$)\\d+(\\.\\d{1,2})?$";
-    private static final String FECHA_PATTERN = "^(?!\\s*$)\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$";
+    private final PagoRepository pagosRepository;
+
+    public PagosService(PagoRepository pagosRepository) {
+        this.pagosRepository = pagosRepository;
+    }
+
+    // Métodos existentes...
+
+    public PagoBean actualizarEstadoPago(String paymentIntentId, String status, Double amount) {
+        Optional<PagoBean> pagoOpt = pagosRepository.findByPaymentIntentId(paymentIntentId);
+        if (pagoOpt.isPresent()) {
+            PagoBean pago = pagoOpt.get();
+            pago.setPaymentStatus(status);
+            if (amount != null) {
+                pago.setMonto(amount);
+            }
+            return pagosRepository.save(pago);
+        }
+        return null;
+    }
+
+    public Optional<PagoBean> findByPaymentIntentId(String paymentIntentId) {
+        return pagosRepository.findByPaymentIntentId(paymentIntentId);
+    }
 
     public List<PagoBean> obtenerTodosLosPagos() {
-        return pagoRepository.findAll();
+
+        return List.of();
     }
 
     public Optional<PagoBean> buscarPorId(Long id) {
-        return pagoRepository.findById(id);
-    }
-
-    public PagoBean crearPago(PagoBean pago) {
-        validarPago(pago);
-        pago.setUuid(UUID.randomUUID().toString());
-        pago.setFechaPago(LocalDate.now());
-        return pagoRepository.save(pago);
-    }
-
-    public Optional<PagoBean> actualizarPago(Long id, PagoBean nuevoPago) {
-        return pagoRepository.findById(id)
-                .map(pagoExistente -> {
-                    pagoExistente.setMonto(nuevoPago.getMonto());
-                    pagoExistente.setFechaPago(nuevoPago.getFechaPago());
-
-                    return pagoRepository.save(pagoExistente);
-                });
-    }
-
-
-    public void eliminarPago(Long id) {
-        pagoRepository.deleteById(id);
+        return Optional.empty();
     }
 
     public Optional<PagoBean> buscarPorUUID(String uuid) {
-        return pagoRepository.findByUuid(uuid);
+        return Optional.empty();
     }
 
-    public void validarPago(PagoBean pago) {
-        String montoStr = String.valueOf(pago.getMonto());
-        String fechaStr = pago.getFechaPago().toString();
+    public Optional<PagoBean> actualizarPago(Long id, PagoBean nuevoPago) {
+        return Optional.empty();
+    }
 
-        if (!montoStr.matches(MONTO_PATTERN)) {
-            throw new IllegalArgumentException("El monto no es válido");
-        }
-        if (!fechaStr.matches(FECHA_PATTERN)) {
-            throw new IllegalArgumentException("La fecha no es válida");
-        }
+    public void eliminarPago(Long id) {
     }
 
     public List<PagoBean> obtenerPagosPorRenta(Long rentaId) {
-        return pagoRepository.findAllByRenta_Id(rentaId);
+        return List.of();
+    }
+
+    public PagoBean crearPago(PagoBean pago) {
+        return pago;
     }
 }

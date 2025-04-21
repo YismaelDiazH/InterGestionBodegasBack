@@ -1,6 +1,10 @@
 package mx.edu.utez.Backend.Bodegas.controller;
 
+import mx.edu.utez.Backend.Bodegas.models.pago.ConfirmacionPagoDTO;
 import mx.edu.utez.Backend.Bodegas.models.pago.PagoBean;
+import mx.edu.utez.Backend.Bodegas.models.renta.RentaBean;
+import mx.edu.utez.Backend.Bodegas.repositories.PagoRepository;
+import mx.edu.utez.Backend.Bodegas.repositories.RentasRepository;
 import mx.edu.utez.Backend.Bodegas.services.PagosService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,8 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("api/pagos/")
@@ -18,6 +24,11 @@ public class PagosController {
 
     @Autowired
     private PagosService pagoService;
+    @Autowired
+    private PagoRepository pagoRepository;
+
+    @Autowired
+    private RentasRepository rentasRepository;
 
     @GetMapping
     public List<PagoBean> obtenerTodosLosPagos() {
@@ -26,7 +37,22 @@ public class PagosController {
         logger.debug("Se encontraron {} pagos en el sistema", pagos.size());
         return pagos;
     }
+    @PostMapping("/confirmar")
+    public ResponseEntity<?> confirmarPago(@RequestBody ConfirmacionPagoDTO dto) {
+        Optional<RentaBean> rentaOpt = rentasRepository.findById(dto.getRentaId());
+        if (rentaOpt.isEmpty()) return ResponseEntity.badRequest().body("Renta no encontrada");
 
+        PagoBean pago = new PagoBean();
+        pago.setUuid(UUID.randomUUID().toString());
+        pago.setMonto(dto.getMonto());
+        pago.setFechaPago(LocalDate.now().now());
+        pago.setPaymentIntentId(dto.getPaymentIntentId());
+        pago.setPaymentStatus(dto.getPaymentStatus());
+        pago.setRenta(rentaOpt.get());
+
+        pagoRepository.save(pago);
+        return ResponseEntity.ok("Pago registrado");
+    }
     @GetMapping("id/{id}")
     public ResponseEntity<PagoBean> buscarPorId(@PathVariable Long id) {
         logger.info("GET /api/pagos/id/{} - Buscando pago por ID", id);

@@ -10,4 +10,6 @@ public interface PagoRepository extends JpaRepository<PagoBean, Long> {
     Optional<PagoBean> findByUuid(String uuid);
 
     List<PagoBean> findAllByRenta_Id(Long rentaId);
+
+    Optional<PagoBean> findByPaymentIntentId(String paymentIntentId);
 }
