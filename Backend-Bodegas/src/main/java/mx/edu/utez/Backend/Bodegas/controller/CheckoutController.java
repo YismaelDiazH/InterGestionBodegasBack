@@ -94,6 +94,9 @@ public class CheckoutController implements InitializingBean {
             response.put("customer_email", session.getCustomerEmail());
             response.put("amount_total", session.getAmountTotal());
             response.put("status", session.getStatus());
+            Map<String, String> metadata = session.getMetadata();
+            response.put("cliente_id", metadata.get("cliente_id"));
+            response.put("bodega_id", metadata.get("bodega_id"));
 
             return ResponseEntity.ok(response);
         } catch (StripeException e) {
