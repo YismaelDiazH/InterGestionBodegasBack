@@ -5,6 +5,7 @@ import mx.edu.utez.Backend.Bodegas.models.bodega.BodegaBean;
 import mx.edu.utez.Backend.Bodegas.models.usuario.UsuarioBean;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Entity
 @Table(name = "rentas")
@@ -26,7 +27,7 @@ public class RentaBean {
 
     private LocalDate fechaFin;
     @Column(unique = true, nullable = false)
-    private String uuid;
+    private String uuid = UUID.randomUUID().toString();
 
     private boolean renovada;
 

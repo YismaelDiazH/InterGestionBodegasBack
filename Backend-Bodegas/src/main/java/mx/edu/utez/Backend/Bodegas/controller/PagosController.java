@@ -1,10 +1,14 @@
 package mx.edu.utez.Backend.Bodegas.controller;
 
+import jakarta.transaction.Transactional;
+import mx.edu.utez.Backend.Bodegas.models.bodega.BodegaBean;
 import mx.edu.utez.Backend.Bodegas.models.pago.ConfirmacionPagoDTO;
 import mx.edu.utez.Backend.Bodegas.models.pago.PagoBean;
 import mx.edu.utez.Backend.Bodegas.models.renta.RentaBean;
+import mx.edu.utez.Backend.Bodegas.repositories.BodegasRepository;
 import mx.edu.utez.Backend.Bodegas.repositories.PagoRepository;
 import mx.edu.utez.Backend.Bodegas.repositories.RentasRepository;
+import mx.edu.utez.Backend.Bodegas.repositories.UsuarioRepository;
 import mx.edu.utez.Backend.Bodegas.services.PagosService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,13 +18,20 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("api/pagos/")
+@RequestMapping("/api/pagos/")
 public class PagosController {
     private static final Logger logger = LogManager.getLogger(PagosController.class);
+
+    @Autowired
+    private BodegasRepository bodegaRepository;
+
+    @Autowired
+    private UsuarioRepository clienteRepository;
 
     @Autowired
     private PagosService pagoService;
@@ -37,22 +48,71 @@ public class PagosController {
         logger.debug("Se encontraron {} pagos en el sistema", pagos.size());
         return pagos;
     }
-    @PostMapping("/confirmar")
+
+
+    @Transactional
+    @PostMapping("confirmar")
     public ResponseEntity<?> confirmarPago(@RequestBody ConfirmacionPagoDTO dto) {
-        Optional<RentaBean> rentaOpt = rentasRepository.findById(dto.getRentaId());
-        if (rentaOpt.isEmpty()) return ResponseEntity.badRequest().body("Renta no encontrada");
+        try {
+            logger.info("Datos recibidos para confirmar pago: {}", dto);
 
-        PagoBean pago = new PagoBean();
-        pago.setUuid(UUID.randomUUID().toString());
-        pago.setMonto(dto.getMonto());
-        pago.setFechaPago(LocalDate.now().now());
-        pago.setPaymentIntentId(dto.getPaymentIntentId());
-        pago.setPaymentStatus(dto.getPaymentStatus());
-        pago.setRenta(rentaOpt.get());
+            // Validar datos de entrada
+            if (dto.getBodegaId() == null || dto.getClienteId() == null) {
+                throw new RuntimeException("Faltan datos requeridos (bodegaId o clienteId)");
+            }
 
-        pagoRepository.save(pago);
-        return ResponseEntity.ok("Pago registrado");
+            // 1. Obtener y actualizar la bodega
+            BodegaBean bodega = bodegaRepository.findById(dto.getBodegaId())
+                    .orElseThrow(() -> new RuntimeException("Bodega no encontrada con ID: " + dto.getBodegaId()));
+
+            // Verificar si la bodega ya está ocupada
+            if ("Ocupada".equalsIgnoreCase(bodega.getStatus())) {
+                throw new RuntimeException("La bodega ya está ocupada");
+            }
+
+            // Actualizar estado de la bodega
+            bodega.setStatus("Ocupada");
+            bodegaRepository.save(bodega);
+            logger.info("Estado de bodega actualizado - ID: {}, Nuevo status: {}", bodega.getId(), bodega.getStatus());
+
+            // 2. Crear la renta
+            RentaBean renta = new RentaBean();
+            renta.setFechaInicio(LocalDate.now());
+            renta.setFechaFin(LocalDate.now().plusMonths(1));
+            renta.setBodega(bodega);
+            renta.setCliente(clienteRepository.findById(dto.getClienteId())
+                    .orElseThrow(() -> new RuntimeException("Cliente no encontrado con ID: " + dto.getClienteId())));
+
+            RentaBean rentaGuardada = rentasRepository.save(renta);
+            logger.info("Renta creada con ID: {}", rentaGuardada.getId());
+
+            // 3. Crear el pago
+            PagoBean pago = new PagoBean();
+            pago.setUuid(UUID.randomUUID().toString());
+            pago.setMonto(dto.getMonto());
+            pago.setFechaPago(LocalDate.now());
+            pago.setPaymentIntentId(dto.getSessionId());
+            pago.setPaymentStatus(dto.getPaymentStatus());
+            pago.setRenta(rentaGuardada);
+
+            PagoBean pagoGuardado = pagoRepository.save(pago);
+            logger.info("Pago registrado con ID: {}", pagoGuardado.getId());
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Pago y renta registrados exitosamente",
+                    "rentaId", rentaGuardada.getId(),
+                    "pagoId", pagoGuardado.getId(),
+                    "bodegaId", bodega.getId()
+            ));
+        } catch (Exception e) {
+            logger.error("Error al confirmar pago: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Error al confirmar pago",
+                    "message", e.getMessage()
+            ));
+        }
     }
+
     @GetMapping("id/{id}")
     public ResponseEntity<PagoBean> buscarPorId(@PathVariable Long id) {
         logger.info("GET /api/pagos/id/{} - Buscando pago por ID", id);

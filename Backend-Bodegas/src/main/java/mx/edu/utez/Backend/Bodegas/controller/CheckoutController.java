@@ -10,7 +10,8 @@ import mx.edu.utez.Backend.Bodegas.repositories.BodegasRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.InitializingBean;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/checkout")
 public class CheckoutController implements InitializingBean {
+    private static final Logger logger = LogManager.getLogger(CheckoutController.class);
 
     @Value("${stripe.secret.key}")
     private String stripeSecretKey;
@@ -91,15 +93,13 @@ public class CheckoutController implements InitializingBean {
             Map<String, Object> response = new HashMap<>();
             response.put("id", session.getId());
             response.put("payment_status", session.getPaymentStatus());
-            response.put("customer_email", session.getCustomerEmail());
             response.put("amount_total", session.getAmountTotal());
-            response.put("status", session.getStatus());
-            Map<String, String> metadata = session.getMetadata();
-            response.put("cliente_id", metadata.get("cliente_id"));
-            response.put("bodega_id", metadata.get("bodega_id"));
+            response.put("metadata", session.getMetadata()); // Asegúrate de incluir la metadata
 
+            logger.info("Información de sesión obtenida: {}", response);
             return ResponseEntity.ok(response);
         } catch (StripeException e) {
+            logger.error("Error al obtener información de la sesión: {}", e.getMessage());
             return ResponseEntity.badRequest().body("Error al obtener información de la sesión");
         }
     }
