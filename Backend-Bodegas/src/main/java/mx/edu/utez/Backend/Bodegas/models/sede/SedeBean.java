@@ -37,7 +37,7 @@ public class SedeBean {
     @JsonIgnore
     private List<BodegaBean> bodegas;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
