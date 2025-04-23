@@ -1,5 +1,6 @@
 package mx.edu.utez.Backend.Bodegas.models.renta;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import mx.edu.utez.Backend.Bodegas.models.bodega.BodegaBean;
 import mx.edu.utez.Backend.Bodegas.models.usuario.UsuarioBean;
@@ -17,10 +18,12 @@ public class RentaBean {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private UsuarioBean cliente;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bodega_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private BodegaBean bodega;
 
     private LocalDate fechaInicio;
@@ -34,6 +37,7 @@ public class RentaBean {
     // Opcional: para asociar con la renta anterior (si fue renovación)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "renta_original_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private RentaBean rentaOriginal;
 
     public RentaBean() {}

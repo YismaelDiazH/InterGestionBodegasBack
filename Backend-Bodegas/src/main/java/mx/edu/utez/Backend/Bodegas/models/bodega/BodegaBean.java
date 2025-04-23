@@ -1,5 +1,6 @@
 package mx.edu.utez.Backend.Bodegas.models.bodega;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import mx.edu.utez.Backend.Bodegas.models.pago.PagoBean;
@@ -8,7 +9,6 @@ import mx.edu.utez.Backend.Bodegas.models.sede.SedeBean;
 @Entity
 @Data
 @Table(name = "bodegas")
-
 public class BodegaBean {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
